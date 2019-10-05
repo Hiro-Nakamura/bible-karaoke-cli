@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""
+Process HearThis folder
+"""
+
+__author__ = "Chris Hirt"
+__version__ = "0.1.0"
+__license__ = "MIT"
+
+import argparse, subprocess
+import os, re, csv, datetime
+import xml.etree.ElementTree as ET
+combine = False
+
+def main(args):
+    hearThisProjectFolder = args.projectFolder
+    output = args.output
+    if not os.path.isdir(hearThisProjectFolder):
+        raise Exception('Could not find project folder %s' % hearThisProjectFolder)
+    xmlroot = ET.parse(os.path.join(hearThisProjectFolder, 'info.xml')).getroot()
+    lines = xmlroot.findall('.//ScriptLine')
+    outputFilename = 'output'
+    startTime = '00:00:00.0'
+    endTime = '00:00:00.0'
+    data = []
+    for i in range(len(lines)):
+        text = getText(lines[i])
+        wavFilename = os.path.join(hearThisProjectFolder, str(i) + '.wav')
+        duration = getDuration(os.path.join(wavFilename))
+        endTime = addDuration(startTime, duration)
+        data.append([wavFilename, text, duration, startTime, endTime])
+        startTime = endTime
+
+    if output == 'csv':
+        outputFilename = outputFilename + '.csv'
+        with open(outputFilename, mode='w', encoding='utf-8') as outputCsv:
+            writer = csv.writer(outputCsv, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            for row in data:
+                writer.writerow(row)
+            print ("wrote %d lines to %s file" % (len(data), outputFilename))
+
+    elif output == 'webvtt':
+        outputFilename = outputFilename + '.vtt'
+        pass
+
+    elif output == 'lrc':
+        outputFilename = outputFilename + '.lrc'
+        pass
+
+    elif output == 'json':
+        outputFilename = outputFilename + '.json'
+        pass
+
+
+
+
+def getText(node):
+    return node.find('./Text').text
+
+def getDuration(filename):
+    ffmpegOutput = subprocess.run(['ffmpeg', '-i', filename], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE).stderr.decode('utf-8')
+    return re.compile(r'Duration: (?P<duration>[^,]+),').findall(ffmpegOutput).pop()
+
+def addDuration(currentTime, duration):
+    time1 = datetime.datetime.strptime(currentTime, "%H:%M:%S.%f")
+    time2 = datetime.datetime.strptime(duration, "%H:%M:%S.%f")
+    time2delta = datetime.timedelta(minutes=time2.minute, seconds=time2.second, microseconds=time2.microsecond)
+    newtime = time1 + time2delta
+    return '{:02}:{:02}:{:02}.{:02}'.format(newtime.hour, newtime.minute, newtime.second, newtime.microsecond)
+
+if __name__ == "__main__":
+    """ This is executed when run from the command line """
+    parser = argparse.ArgumentParser()
+
+    # Required positional argument
+    parser.add_argument("projectFolder", help="HearThis Project Folder e.g. sampledata")
+
+    # Book argument
+    parser.add_argument("-o", "--output", action="store", dest="output", choices=['csv', 'json', 'vtt'], default='csv')
+
+    # Chapter argument
+    parser.add_argument("-c", "--combine", action="store", dest="combine") # true or false; default to false - combine wav files into one file
+
+    # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="Verbosity (-v, -vv, etc)")
+
+    # Specify output of "--version"
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s (version {version})".format(version=__version__))
+
+    args = parser.parse_args()
+    main(args)

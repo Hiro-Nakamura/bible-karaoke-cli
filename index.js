@@ -13,15 +13,14 @@ let args = require("minimist")(process.argv.slice(2));
 // console.log(args);
 
 //// Load the command list:
-var listFiles = fs
-    .readdirSync(path.join(__dirname, "lib", "commands"))
-    .filter(junk.not);
+var pathCommands = path.join(__dirname, "lib", "commands");
+var listFiles = fs.readdirSync(pathCommands).filter(junk.not);
 var commandHash = {};
 listFiles.forEach((file) => {
-    var stat = fs.statSync(path.join(__dirname, "lib", file));
+    var stat = fs.statSync(path.join(pathCommands, file));
     if (stat.isFile()) {
         var command = file.split(".")[0];
-        commandHash[command] = require(path.join(__dirname, "lib", command));
+        commandHash[command] = require(path.join(pathCommands, command));
     }
 });
 // console.log(commandHash);

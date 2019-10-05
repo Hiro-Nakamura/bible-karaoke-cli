@@ -9,8 +9,10 @@
   "author": "Hack'19",
   "license": "ISC",
   "dependencies": {
+    "async": "^3.1.0",
     "clear": "^0.1.0",
-    "junk": "^3.1.0"
+    "junk": "^3.1.0",
+    "shelljs": "^0.8.3"
   },
   "devDependencies": {
     "eslint": "^6.5.1",
@@ -18,5 +20,8 @@
     "eslint-plugin-prettier": "^3.1.1",
     "prettier": "^1.18.2",
     "write-file-trim": "^1.0.8"
+  },
+  "bin": {
+    "bbk": "./index.js"
   }
 }

@@ -10,7 +10,13 @@ __license__ = "MIT"
 import argparse, subprocess
 import os, re, csv, datetime
 import xml.etree.ElementTree as ET
-from webvtt import WebVTT, Caption
+from itertools import groupby
+
+try:
+    from webvtt import WebVTT, Caption
+    noWebVTT = False
+except ImportError:
+    noWebVTT = True
 
 def main(args):
     hearThisProjectFolder = args.projectFolder
@@ -29,7 +35,11 @@ def main(args):
         wavFilename = os.path.join(hearThisProjectFolder, str(i) + '.wav')
         duration = getDuration(os.path.join(wavFilename), args.ffmpegPath)
         endTime = addDuration(startTime, duration)
-        data.append([wavFilename, text, duration, startTime, endTime])
+        if args.wordbreak:
+            breaks = breakWords(text, duration, startTime)
+        else:
+            breaks = []
+        data.append([wavFilename, text, duration, startTime, endTime, breaks])
         startTime = endTime
     print ("parsed %d lines of data" % len(data))
 
@@ -41,13 +51,11 @@ def main(args):
     if output == 'csv':
       outputCsv(outputFilename + '.csv', data)
 
-    elif output == 'vtt':
+    elif output == 'vtt' and not noWebVTT:
       outputVtt(outputFilename + '.vtt', data)
 
     elif output == 'lrc':
-        outputFilename = outputFilename + '.lrc'
-        print('output lrc')
-        pass
+        outputLrc(outputFilename + '.lrc', data)
 
     elif output == 'json':
         outputFilename = outputFilename + '.json'
@@ -72,6 +80,16 @@ def outputVtt(filename, data):
     vtt.write(outputFile)
     print ("wrote VTT to %s file" % filename)
 
+def outputLrc(filename, data):
+    res = []
+    for d in data:
+        if len(d[5]):
+            s = "[{}] ".format(d[3]) + " ".join("<{}> {}".format(x[1], x[0]) for x in d[5]) + " <{}>".format(d[4])
+        else:
+            s = "[{}]{}".format(d[3], d[1])
+        res.append(s)
+    with open(filename, "w") as outf:
+        outf.write("\n".join(res))
 
 def getDuration(filename, ffmpeg):
     ffmpegOutput = subprocess.run([ffmpeg, '-i', filename], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE).stderr.decode('utf-8')
@@ -84,6 +102,26 @@ def addDuration(currentTime, duration):
     newtime = time1 + time2delta
     return '{:02}:{:02}:{:02}.{:03}'.format(newtime.hour, newtime.minute, newtime.second, newtime.microsecond)
 
+def dur2float(duration):
+    vs = [float(x) for x in duration.split(':')]
+    res = 0.
+    for v in vs:
+        res = res * 60 + v
+    return res
+
+def float2dur(dur):
+    return "{:02}:{:02}:{:02}.{:03}".format(int(dur/3600), int((dur % 3600) / 60), int(dur % 60), int((dur - int(dur)) * 1000))
+        
+def breakWords(text, duration, start):
+    res = []
+    breaks = list(groupby(text, key=lambda c: c in 'aeiou'))
+    vals = int(dur2float(duration) * 1000 / len(breaks) * 2.) / 1000.
+    for w in text.split(' '):
+        numv = len([x for x in groupby(w, key=lambda c: c in 'aeiou') if x[0]])
+        res.append([w, start])
+        start = addDuration(start, float2dur(vals * numv))
+    return res
+
 if __name__ == "__main__":
     """ This is executed when run from the command line """
     parser = argparse.ArgumentParser()
@@ -93,11 +131,13 @@ if __name__ == "__main__":
     parser.add_argument("outputFile", help="Output file without extension")
 
     # Book argument
-    parser.add_argument("-o", "--output", action="store", dest="output", choices=['csv', 'json', 'vtt'], default='csv')
+    parser.add_argument("-o", "--output", action="store", dest="output", choices=['csv', 'json', 'vtt', 'lrc'], default='csv')
     parser.add_argument("-f", "--ffmpegPath", action="store", dest="ffmpegPath", default='ffmpeg')
 
     # Chapter argument
     parser.add_argument("-c", "--combine", action="store_true", dest="combine", default=False) # true or false; default to false - combine wav files into one file
+
+    parser.add_argument("-w", "--wordbreak", action="store_true", default=False, help="Simple word breaking")
 
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
     parser.add_argument(

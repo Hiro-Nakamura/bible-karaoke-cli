@@ -20,14 +20,14 @@ def main(args):
         raise Exception('Could not find project folder %s' % hearThisProjectFolder)
     xmlroot = ET.parse(os.path.join(hearThisProjectFolder, 'info.xml')).getroot()
     lines = xmlroot.findall('.//ScriptLine')
-    outputFilename = 'output'
+    outputFilename = args.outputFile
     startTime = '00:00:00.000'
     endTime = '00:00:00.000'
     data = []
     for i in range(len(lines)):
         text = getText(lines[i])
         wavFilename = os.path.join(hearThisProjectFolder, str(i) + '.wav')
-        duration = getDuration(os.path.join(wavFilename))
+        duration = getDuration(os.path.join(wavFilename), args.ffmpegPath)
         endTime = addDuration(startTime, duration)
         data.append([wavFilename, text, duration, startTime, endTime])
         startTime = endTime
@@ -73,8 +73,8 @@ def outputVtt(filename, data):
     print ("wrote VTT to %s file" % filename)
 
 
-def getDuration(filename):
-    ffmpegOutput = subprocess.run(['ffmpeg', '-i', filename], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE).stderr.decode('utf-8')
+def getDuration(filename, ffmpeg):
+    ffmpegOutput = subprocess.run([ffmpeg, '-i', filename], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE).stderr.decode('utf-8')
     return re.compile(r'Duration: (?P<duration>[^,]+),').findall(ffmpegOutput).pop()
 
 def addDuration(currentTime, duration):
@@ -90,9 +90,11 @@ if __name__ == "__main__":
 
     # Required positional argument
     parser.add_argument("projectFolder", help="HearThis Project Folder e.g. sampledata")
+    parser.add_argument("outputFile", help="Output file without extension")
 
     # Book argument
     parser.add_argument("-o", "--output", action="store", dest="output", choices=['csv', 'json', 'vtt'], default='csv')
+    parser.add_argument("-f", "--ffmpegPath", action="store", dest="ffmpegPath", default='ffmpeg')
 
     # Chapter argument
     parser.add_argument("-c", "--combine", action="store_true", dest="combine", default=False) # true or false; default to false - combine wav files into one file

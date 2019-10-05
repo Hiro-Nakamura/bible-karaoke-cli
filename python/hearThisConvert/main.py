@@ -15,6 +15,7 @@ combine = False
 def main(args):
     hearThisProjectFolder = args.projectFolder
     output = args.output
+
     if not os.path.isdir(hearThisProjectFolder):
         raise Exception('Could not find project folder %s' % hearThisProjectFolder)
     xmlroot = ET.parse(os.path.join(hearThisProjectFolder, 'info.xml')).getroot()
@@ -31,6 +32,11 @@ def main(args):
         data.append([wavFilename, text, duration, startTime, endTime])
         startTime = endTime
 
+    if args.combine:
+      print('combine wav file here')
+      pass # combine wav files into one wav file here 'combined.wav'
+
+
     if output == 'csv':
         outputFilename = outputFilename + '.csv'
         with open(outputFilename, mode='w', encoding='utf-8') as outputCsv:
@@ -41,14 +47,17 @@ def main(args):
 
     elif output == 'webvtt':
         outputFilename = outputFilename + '.vtt'
+        print('output webvtt')
         pass
 
     elif output == 'lrc':
         outputFilename = outputFilename + '.lrc'
+        print('output lrc')
         pass
 
     elif output == 'json':
         outputFilename = outputFilename + '.json'
+        print('output json')
         pass
 
 
@@ -79,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", action="store", dest="output", choices=['csv', 'json', 'vtt'], default='csv')
 
     # Chapter argument
-    parser.add_argument("-c", "--combine", action="store", dest="combine") # true or false; default to false - combine wav files into one file
+    parser.add_argument("-c", "--combine", action="store_true", dest="combine", default=False) # true or false; default to false - combine wav files into one file
 
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
     parser.add_argument(

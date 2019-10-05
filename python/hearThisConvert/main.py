@@ -10,7 +10,7 @@ __license__ = "MIT"
 import argparse, subprocess
 import os, re, csv, datetime
 import xml.etree.ElementTree as ET
-combine = False
+from webvtt import WebVTT, Caption
 
 def main(args):
     hearThisProjectFolder = args.projectFolder
@@ -21,8 +21,8 @@ def main(args):
     xmlroot = ET.parse(os.path.join(hearThisProjectFolder, 'info.xml')).getroot()
     lines = xmlroot.findall('.//ScriptLine')
     outputFilename = 'output'
-    startTime = '00:00:00.0'
-    endTime = '00:00:00.0'
+    startTime = '00:00:00.000'
+    endTime = '00:00:00.000'
     data = []
     for i in range(len(lines)):
         text = getText(lines[i])
@@ -31,6 +31,7 @@ def main(args):
         endTime = addDuration(startTime, duration)
         data.append([wavFilename, text, duration, startTime, endTime])
         startTime = endTime
+    print ("parsed %d lines of data" % len(data))
 
     if args.combine:
       print('combine wav file here')
@@ -38,17 +39,10 @@ def main(args):
 
 
     if output == 'csv':
-        outputFilename = outputFilename + '.csv'
-        with open(outputFilename, mode='w', encoding='utf-8') as outputCsv:
-            writer = csv.writer(outputCsv, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            for row in data:
-                writer.writerow(row)
-            print ("wrote %d lines to %s file" % (len(data), outputFilename))
+      outputCsv(outputFilename + '.csv', data)
 
-    elif output == 'webvtt':
-        outputFilename = outputFilename + '.vtt'
-        print('output webvtt')
-        pass
+    elif output == 'vtt':
+      outputVtt(outputFilename + '.vtt', data)
 
     elif output == 'lrc':
         outputFilename = outputFilename + '.lrc'
@@ -60,11 +54,24 @@ def main(args):
         print('output json')
         pass
 
-
-
-
 def getText(node):
     return node.find('./Text').text
+
+def outputCsv(filename, data):
+  with open(filename, mode='w', encoding='utf-8') as outputCsv:
+    writer = csv.writer(outputCsv, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    for row in data:
+        writer.writerow(row)
+    print ("wrote CSV to %s file" % filename)
+
+def outputVtt(filename, data):
+  vtt = WebVTT()
+  for row in data:
+    vtt.captions.append(Caption(row[3], row[4], row[1]))
+  with open(filename, mode='w', encoding='utf-8') as outputFile:
+    vtt.write(outputFile)
+    print ("wrote VTT to %s file" % filename)
+
 
 def getDuration(filename):
     ffmpegOutput = subprocess.run(['ffmpeg', '-i', filename], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE).stderr.decode('utf-8')
@@ -75,7 +82,7 @@ def addDuration(currentTime, duration):
     time2 = datetime.datetime.strptime(duration, "%H:%M:%S.%f")
     time2delta = datetime.timedelta(minutes=time2.minute, seconds=time2.second, microseconds=time2.microsecond)
     newtime = time1 + time2delta
-    return '{:02}:{:02}:{:02}.{:02}'.format(newtime.hour, newtime.minute, newtime.second, newtime.microsecond)
+    return '{:02}:{:02}:{:02}.{:03}'.format(newtime.hour, newtime.minute, newtime.second, newtime.microsecond)
 
 if __name__ == "__main__":
     """ This is executed when run from the command line """

@@ -137,7 +137,7 @@ if __name__ == "__main__":
     # Chapter argument
     parser.add_argument("-c", "--combine", action="store_true", dest="combine", default=False) # true or false; default to false - combine wav files into one file
 
-    parser.add_argument("-w", "--wordbreak", action="store_true", default=False, help="Simple word breaking")
+    parser.add_argument("-w", "--wordbreak", action="store_true", dest="wordbreak", default=False, help="Simple word breaking")
 
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
     parser.add_argument(

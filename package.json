@@ -12,10 +12,16 @@
     "async": "^3.1.0",
     "chalk": "^2.4.2",
     "clear": "^0.1.0",
+    "datauri": "^2.0.0",
     "get-audio-duration": "^1.0.0",
+    "inquirer": "^7.0.0",
     "junk": "^3.1.0",
     "minimist": "^1.2.0",
+    "progress": "^2.0.3",
+    "puppeteer": "^2.0.0",
+    "readdir-sorted": "^3.0.0",
     "shelljs": "^0.8.3",
+    "tempy": "^0.3.0",
     "xml-js": "^1.6.11"
   },
   "devDependencies": {

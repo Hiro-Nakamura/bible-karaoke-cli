@@ -25,3 +25,6 @@ lib-cov
 
 
 node_modules/
+renderedAnimation.html
+bbkFormat.js
+

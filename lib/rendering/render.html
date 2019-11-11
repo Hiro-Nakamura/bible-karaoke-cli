@@ -95,8 +95,13 @@
         var animations = [];
 
         window.afterLoadKar = function(textObj, backgroundImage, fps) {
-            let imageParent = document.getElementById("imgParent");
-            imageParent.style.backgroundImage = "url("+backgroundImage+")";            // image.src = "IMAGE URL/PATH"
+            var showSpeechBubble = true;
+            if (backgroundImage == "null") {
+                showSpeechBubble = false;
+            } else {
+                let imageParent = document.getElementById("imgParent");
+                imageParent.style.backgroundImage = "url("+backgroundImage+")";            // image.src = "IMAGE URL/PATH"
+            }
 
             var subtitles = document.querySelector("#subtitles2");
             var textObject = [];
@@ -156,17 +161,31 @@
                     var currentLine = line;
                     
                     var elem = document.querySelector('#p'+line + ' .'+container);
-                    var wordAnimate = elem.animate({
+                    var wordAnimateOn = elem.animate({
                         background: ["rgba(255,255,0,0)", "rgba(255,255,0,1)"],
                     }, {
-                        duration: duration,
+                        duration: 250,
                         delay: start,
-                        iterations: 1
+                        iterations: 1,
+                        fill: "forwards"
                     });
                     // pause the animation so the app can tell it when to run
-                    wordAnimate.pause();
+                    wordAnimateOn.pause();
                     // store all animations so we can tell them all what to do later
-                    animations.push(wordAnimate);
+                    animations.push(wordAnimateOn);
+
+                    var wordAnimateOff = elem.animate({
+                        background: ["rgba(255,255,0,1)", "rgba(255,255,0,0)"],
+                    }, {
+                        duration: 500,
+                        delay: start+duration,
+                        iterations: 1,
+                        fill: "forwards"
+                    });
+                    // pause the animation so the app can tell it when to run
+                    wordAnimateOff.pause();
+                    // store all animations so we can tell them all what to do later
+                    animations.push(wordAnimateOff);
 
                 }
                 
@@ -199,40 +218,42 @@
                     phraseAnimate.pause();
                     // push them all into the main animations array
                     animations.push(phraseAnimate);
-                    var phraseBackgroundOn = line.animate([
-                        { 
-                            background: 'rgba(255,255,255,0)'
-                        }, 
-                        { 
-                            background: 'rgba(255,255,255,1)'
-                        }
-                    ], {
-                        duration: 500,
-                        delay: phrase.start,
-                        iterations: 1,
-                        fill: "forwards"
-                    });
-                    // pause for playback later
-                    phraseBackgroundOn.pause();
-                    // push them all into the main animations array
-                    animations.push(phraseBackgroundOn);
-                    var phraseBackgroundOff = line.animate([
-                        { 
-                            background: 'rgba(255,255,255,1)'
-                        }, 
-                        { 
-                            background: 'rgba(255,255,255,0)'
-                        }
-                    ], {
-                        duration: 500,
-                        delay: phrase.end,
-                        iterations: 1,
-                        fill: "forwards"
-                    });
-                    // pause for playback later
-                    phraseBackgroundOff.pause();
-                    // push them all into the main animations array
-                    animations.push(phraseBackgroundOff);
+                    if (showSpeechBubble) {
+                        var phraseBackgroundOn = line.animate([
+                            { 
+                                background: 'rgba(255,255,255,0)'
+                            }, 
+                            { 
+                                background: 'rgba(255,255,255,1)'
+                            }
+                        ], {
+                            duration: 500,
+                            delay: phrase.start,
+                            iterations: 1,
+                            fill: "forwards"
+                        });
+                        // pause for playback later
+                        phraseBackgroundOn.pause();
+                        // push them all into the main animations array
+                        animations.push(phraseBackgroundOn);
+                        var phraseBackgroundOff = line.animate([
+                            { 
+                                background: 'rgba(255,255,255,1)'
+                            }, 
+                            { 
+                                background: 'rgba(255,255,255,0)'
+                            }
+                        ], {
+                            duration: 500,
+                            delay: phrase.end,
+                            iterations: 1,
+                            fill: "forwards"
+                        });
+                        // pause for playback later
+                        phraseBackgroundOff.pause();
+                        // push them all into the main animations array
+                        animations.push(phraseBackgroundOff);                        
+                    }
                 }
 
             }
